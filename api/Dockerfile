@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY api/pyproject.toml ./
+COPY pyproject.toml ./
 # Install dependencies only first (no source yet) so rebuilds are fast when app code changes.
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir fastapi "uvicorn[standard]" sqlalchemy "psycopg[binary]" \
@@ -16,12 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip \
        pypdf python-docx \
        celery redis minio python-multipart httpx python-dotenv pytest pytest-asyncio
 
-# Build context is the repo root (not ./api) specifically so this can also copy in db/ -
-# the mock CaseLawProvider's fixtures live there and, on a plain Docker host with no bind
-# mount (e.g. Render), this COPY is the only way they end up in the image. Locally,
-# docker-compose's `./db:/app/db` volume mount takes precedence at runtime anyway.
-COPY api/ ./
-COPY db/ ./db
+COPY . .
 
 RUN chmod +x entrypoint.sh
 
