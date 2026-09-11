@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { AuditDetailSheet } from "./AuditDetailSheet";
+import { AgentCallDetailDialog } from "./AgentCallDetailDialog";
 import { formatDateTime } from "@/lib/format";
-import type { AuditLogOut } from "@/lib/types";
+import type { AgentCallLogOut } from "@/lib/types";
 
-export function AuditTable({ entries }: { entries: AuditLogOut[] }) {
-  const [selected, setSelected] = useState<AuditLogOut | null>(null);
+export function AgentCallLogTable({ entries }: { entries: AgentCallLogOut[] }) {
+  const [selected, setSelected] = useState<AgentCallLogOut | null>(null);
 
   if (entries.length === 0) {
-    return <p className="text-sm text-ink-faint py-8 text-center">No queries logged yet.</p>;
+    return <p className="text-sm text-ink-faint py-8 text-center">No agent calls logged yet - run a query first.</p>;
   }
 
   return (
@@ -20,10 +20,10 @@ export function AuditTable({ entries }: { entries: AuditLogOut[] }) {
           <thead>
             <tr className="border-b border-border bg-black/[0.02] text-left text-xs uppercase tracking-wide text-ink-faint">
               <th className="px-4 py-2.5 font-medium">Time</th>
-              <th className="px-4 py-2.5 font-medium">User</th>
-              <th className="px-4 py-2.5 font-medium">Source</th>
-              <th className="px-4 py-2.5 font-medium">Query</th>
-              <th className="px-4 py-2.5 font-medium">Flags</th>
+              <th className="px-4 py-2.5 font-medium">Agent</th>
+              <th className="px-4 py-2.5 font-medium">Model</th>
+              <th className="px-4 py-2.5 font-medium">Status</th>
+              <th className="px-4 py-2.5 font-medium">Duration</th>
             </tr>
           </thead>
           <tbody>
@@ -34,25 +34,21 @@ export function AuditTable({ entries }: { entries: AuditLogOut[] }) {
                 className="border-b border-border last:border-0 hover:bg-black/[0.015] cursor-pointer"
               >
                 <td className="px-4 py-2.5 text-xs text-ink-faint whitespace-nowrap">{formatDateTime(e.created_at)}</td>
-                <td className="px-4 py-2.5 text-xs font-mono text-ink-muted">{e.user_email}</td>
-                <td className="px-4 py-2.5">
-                  <Badge variant="outline">{e.source}</Badge>
-                </td>
-                <td className="px-4 py-2.5 text-ink max-w-xs truncate">{e.query_text}</td>
+                <td className="px-4 py-2.5 font-mono text-xs text-ink">{e.agent_name}</td>
+                <td className="px-4 py-2.5 font-mono text-xs text-ink-muted">{e.model}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex gap-1">
-                    {e.no_confident_match && <Badge variant="grey">no match</Badge>}
-                    {e.degraded_mode && <Badge variant="amber">degraded</Badge>}
+                    {e.success ? <Badge variant="green">success</Badge> : <Badge variant="red">failed</Badge>}
                     {e.replayed_from_cache && <Badge variant="accent">replayed</Badge>}
-                    {e.blocked_by_guardrail && <Badge variant="red">blocked</Badge>}
                   </div>
                 </td>
+                <td className="px-4 py-2.5 text-xs text-ink-faint">{e.duration_ms}ms</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <AuditDetailSheet entry={selected} open={Boolean(selected)} onClose={() => setSelected(null)} />
+      <AgentCallDetailDialog entry={selected} open={Boolean(selected)} onClose={() => setSelected(null)} />
     </>
   );
 }

@@ -9,6 +9,7 @@ from app.models.authority import Authority
 from app.models.matter_authority import MatterAuthority
 from app.models.reliability import ReliabilityAssessment
 from app.models.querylog import QueryLog
+from app.models.agent_call_log import AgentCallLog
 
 __all__ = [
     "User",
@@ -20,4 +21,5 @@ __all__ = [
     "MatterAuthority",
     "ReliabilityAssessment",
     "QueryLog",
+    "AgentCallLog",
 ]

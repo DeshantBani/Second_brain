@@ -1,11 +1,13 @@
 import { getToken } from "./auth";
 import type {
+  AgentCallLogOut,
   AuditLogOut,
   AuthorityOut,
   HealthOut,
   MatterDetail,
   MatterSummary,
   MeResponse,
+  QueryHistoryItem,
   QueryResultOut,
 } from "./types";
 
@@ -71,6 +73,8 @@ export const api = {
 
   getQuery: (queryLogId: string) => request<QueryResultOut>(`/query/${queryLogId}`),
 
+  listQueryHistory: () => request<QueryHistoryItem[]>("/query"),
+
   reviewAssessment: (queryLogId: string, reliabilityAssessmentId: string, decision: string = "reviewed") =>
     request(`/query/${queryLogId}/review`, {
       method: "POST",
@@ -83,4 +87,12 @@ export const api = {
     request(`/admin/authorities/${authorityId}/recheck`, { method: "POST" }),
 
   listAudit: () => request<AuditLogOut[]>("/admin/audit"),
+
+  listAgentCalls: (params?: { pipeline_run_id?: string; agent_name?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.pipeline_run_id) qs.set("pipeline_run_id", params.pipeline_run_id);
+    if (params?.agent_name) qs.set("agent_name", params.agent_name);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return request<AgentCallLogOut[]>(`/admin/agent-calls${suffix}`);
+  },
 };

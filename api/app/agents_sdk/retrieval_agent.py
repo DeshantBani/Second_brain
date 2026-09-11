@@ -31,5 +31,5 @@ def build_retrieval_input(query_fp: IssueFingerprintSchema, candidates: list[dic
 
 async def run_retrieval_agent(query_fp: IssueFingerprintSchema, candidates: list[dict]) -> RetrievalResult:
     return await generate_structured(
-        settings.model_fast, INSTRUCTIONS, build_retrieval_input(query_fp, candidates), RetrievalResult
+        "retrieval", settings.model_fast, INSTRUCTIONS, build_retrieval_input(query_fp, candidates), RetrievalResult
     )

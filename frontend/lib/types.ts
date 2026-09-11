@@ -154,6 +154,7 @@ export interface QueryResultOut {
   no_confident_match: boolean;
   rationale: string;
   degraded_mode: boolean;
+  replayed_from_cache: boolean;
   query_fingerprint: Record<string, unknown> | null;
   ranked_matters: RankedMatterOut[];
   top_matter: { matter_id: string; title: string; documents: QueryTopMatterDocument[]; authorities: QueryTopMatterAuthority[] } | null;
@@ -176,11 +177,13 @@ export interface AuthorityOut {
 
 export interface AuditLogOut {
   id: string;
+  pipeline_run_id: string | null;
   user_email: string;
   source: string;
   query_text: string;
   no_confident_match: boolean;
   degraded_mode: boolean;
+  replayed_from_cache: boolean;
   blocked_by_guardrail: boolean;
   created_at: string;
 }
@@ -191,4 +194,31 @@ export interface HealthOut {
   llm_provider: string;
   case_law_provider: string;
   db_ok: boolean;
+}
+
+export interface QueryHistoryItem {
+  query_log_id: string;
+  query_text: string;
+  source: string;
+  no_confident_match: boolean;
+  degraded_mode: boolean;
+  replayed_from_cache: boolean;
+  blocked_by_guardrail: boolean;
+  created_at: string;
+}
+
+export interface AgentCallLogOut {
+  id: string;
+  pipeline_run_id: string | null;
+  agent_name: string;
+  model: string;
+  cache_key: string;
+  system_instruction: string;
+  user_content: string;
+  raw_response_text: string | null;
+  success: boolean;
+  replayed_from_cache: boolean;
+  error_message: string | null;
+  duration_ms: number;
+  created_at: string;
 }

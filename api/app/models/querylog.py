@@ -18,6 +18,13 @@ class QueryLog(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     source: Mapped[str] = mapped_column(String(20), nullable=False, default="web")  # web | outlook | word
+    # Correlates this row to every AgentCallLog row made during the same pipeline run -
+    # see services/call_log.py.
+    pipeline_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    # True if any agent call in this run was served from the raw-response cache rather
+    # than a live Gemini call (see agents_sdk/client.py) - e.g. because of a rate limit.
+    # The reasoning shown is still a genuine past response, never fabricated.
+    replayed_from_cache: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     query_text: Mapped[str] = mapped_column(Text, nullable=False)
     # The live query's fingerprint is intentionally NOT persisted as an IssueFingerprint
     # row (that table is RLS-scoped by matter_id, and a live query belongs to no matter -

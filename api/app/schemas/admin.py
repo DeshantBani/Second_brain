@@ -30,11 +30,13 @@ class RecheckResponse(BaseModel):
 
 class AuditLogOut(BaseModel):
     id: str
+    pipeline_run_id: str | None
     user_email: str
     source: str
     query_text: str
     no_confident_match: bool
     degraded_mode: bool
+    replayed_from_cache: bool
     blocked_by_guardrail: bool
     created_at: datetime
 

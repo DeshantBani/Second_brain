@@ -19,6 +19,8 @@ def log_query(
     degraded_mode: bool = False,
     blocked_by_guardrail: bool = False,
     full_result: dict | None = None,
+    pipeline_run_id: str | None = None,
+    replayed_from_cache: bool = False,
 ) -> QueryLog:
     log = QueryLog(
         user_id=user_id,
@@ -32,6 +34,8 @@ def log_query(
         degraded_mode=degraded_mode,
         blocked_by_guardrail=blocked_by_guardrail,
         full_result=full_result,
+        pipeline_run_id=pipeline_run_id,
+        replayed_from_cache=replayed_from_cache,
     )
     db.add(log)
     db.flush()

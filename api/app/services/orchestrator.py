@@ -16,6 +16,7 @@ graph's nodes run is already confined to matters the requesting user can see - s
 candidate outside that boundary is ever handed to an LLM in the first place, regardless
 of fingerprint similarity."""
 import logging
+import uuid
 
 from langgraph.graph import END, StateGraph
 from sqlalchemy import select
@@ -34,6 +35,7 @@ from app.models.matter import Matter
 from app.models.matter_authority import MatterAuthority
 from app.models.reliability import ReliabilityAssessment
 from app.services.audit import log_query
+from app.services.call_log import current_run_had_any_replay, pipeline_run
 from app.services.embeddings import embed_text
 from app.services.fingerprint_text import fingerprint_to_embedding_text
 from app.services.pipeline_state import PipelineState
@@ -163,10 +165,13 @@ def _build_graph(db: Session):
     def finalize(state: PipelineState, result: dict, *, candidate_ids: list[str], results_returned: list,
                  sources_cited: list, no_confident_match: bool, degraded_mode: bool) -> dict:
         result["query_text"] = state["query_text"]
+        replayed = current_run_had_any_replay()
+        result["replayed_from_cache"] = replayed
         log = log_query(
             db, state["user_id"], state["source"], state["query_text"], state.get("query_fp_dict"),
             matter_access_scope=candidate_ids, results_returned=results_returned, sources_cited=sources_cited,
             no_confident_match=no_confident_match, degraded_mode=degraded_mode, full_result=result,
+            pipeline_run_id=state.get("pipeline_run_id"), replayed_from_cache=replayed,
         )
         result["query_log_id"] = str(log.id)
         return {"result": result}
@@ -427,10 +432,12 @@ def _build_graph(db: Session):
 
 
 async def run_query_pipeline(db: Session, user_id: str, query_text: str, source: str = "web") -> dict:
-    with trace("second_brain_query_pipeline"):
+    run_id = str(uuid.uuid4())
+    with trace("second_brain_query_pipeline"), pipeline_run(run_id):
         graph = _build_graph(db)
         initial_state: PipelineState = {
             "query_text": query_text, "source": source, "user_id": user_id, "degraded_mode": False,
+            "pipeline_run_id": run_id,
         }
         final_state = await graph.ainvoke(initial_state)
         return final_state["result"]

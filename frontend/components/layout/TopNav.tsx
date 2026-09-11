@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookMarked, LayoutList, ScrollText, ShieldCheck, LogOut } from "lucide-react";
+import { BookMarked, History, LayoutList, ScrollText, ShieldCheck, Terminal, LogOut } from "lucide-react";
 import { clearSession, getStoredUser, StoredUser } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -11,11 +11,13 @@ import { cn } from "@/lib/cn";
 const NAV_ITEMS = [
   { href: "/", label: "Query", icon: BookMarked },
   { href: "/matters", label: "Matters", icon: LayoutList },
+  { href: "/history", label: "History", icon: History },
 ];
 
 const ADMIN_NAV_ITEMS = [
   { href: "/audit", label: "Audit Log", icon: ScrollText },
   { href: "/admin/authorities", label: "Authorities", icon: ShieldCheck },
+  { href: "/admin/agent-calls", label: "Agent Calls", icon: Terminal },
 ];
 
 export function TopNav() {

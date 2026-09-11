@@ -1,13 +1,14 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.deps import CurrentUser, get_current_user, get_db
 from app.models.querylog import QueryLog
 from app.models.reliability import ReliabilityAssessment
-from app.schemas.query import QueryRequest, QueryResultOut, ReviewRequest
+from app.schemas.query import QueryHistoryItem, QueryRequest, QueryResultOut, ReviewRequest
 from app.services.orchestrator import run_query_pipeline
 
 router = APIRouter(prefix="/query", tags=["query"])
@@ -19,6 +20,24 @@ async def submit_query(payload: QueryRequest, user: CurrentUser = Depends(get_cu
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="query_text must not be empty")
     result = await run_query_pipeline(db, user.id, payload.query_text, payload.source)
     return QueryResultOut(**result)
+
+
+@router.get("", response_model=list[QueryHistoryItem])
+def list_query_history(user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
+    """The current user's own query history - the "History" section. Scoped to
+    user_id (like the rest of QueryLog), not the full cross-user /admin/audit view."""
+    rows = db.execute(
+        select(QueryLog).where(QueryLog.user_id == user.id).order_by(QueryLog.created_at.desc()).limit(100)
+    ).scalars().all()
+    return [
+        QueryHistoryItem(
+            query_log_id=str(r.id), query_text=r.query_text, source=r.source,
+            no_confident_match=r.no_confident_match, degraded_mode=r.degraded_mode,
+            replayed_from_cache=r.replayed_from_cache, blocked_by_guardrail=r.blocked_by_guardrail,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]
 
 
 @router.get("/{query_log_id}", response_model=QueryResultOut)

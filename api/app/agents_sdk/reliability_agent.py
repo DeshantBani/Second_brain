@@ -63,6 +63,13 @@ provider_data's treatment_excerpt verbatim - do not paraphrase or invent it."""
 
 
 def _build_input(citation: str, relied_upon_for: str, documents: list[dict], provider_status: dict, provider_judgments: list[dict]) -> str:
+    # Drop checked_at before serializing: it's a fresh datetime.now() on every provider
+    # call (see MockCaseLawProvider.get_citation_status), and the model doesn't need it
+    # to reason about the legal question anyway. Leaving it in would make this input -
+    # and therefore its cache key (see agents_sdk/client.py) - different on every call
+    # even when the underlying citation data is unchanged, so the same query could
+    # never hit its own cached response.
+    provider_status = {k: v for k, v in provider_status.items() if k != "checked_at"}
     payload = {
         "authority_citation": citation,
         "relied_upon_for": relied_upon_for,
@@ -89,7 +96,7 @@ async def run_reliability_agent(
         status.model_dump(mode="json"), [j.model_dump(mode="json") for j in judgments],
     )
 
-    assessment = await generate_structured(settings.model_strong, INSTRUCTIONS, input_text, StrictReliabilityAssessment)
+    assessment = await generate_structured("reliability", settings.model_strong, INSTRUCTIONS, input_text, StrictReliabilityAssessment)
 
     guardrail_result = await check_reliability_output(assessment)
     if guardrail_result.tripwire_triggered:

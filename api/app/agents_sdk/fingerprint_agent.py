@@ -33,4 +33,4 @@ that are not in the text."""
 
 
 async def run_fingerprint_agent(text: str) -> IssueFingerprintSchema:
-    return await generate_structured(settings.model_fast, INSTRUCTIONS, text, IssueFingerprintSchema)
+    return await generate_structured("fingerprint", settings.model_fast, INSTRUCTIONS, text, IssueFingerprintSchema)

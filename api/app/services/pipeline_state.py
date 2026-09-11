@@ -13,6 +13,7 @@ class PipelineState(TypedDict, total=False):
     query_text: str
     source: str
     user_id: str
+    pipeline_run_id: str
 
     # Accumulates as nodes run
     degraded_mode: bool

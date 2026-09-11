@@ -33,6 +33,7 @@ def build_reusability_input(query_text: str, matter_title: str, documents: list[
 
 async def run_reusability_agent(query_text: str, matter_title: str, documents: list[dict]) -> ReusabilityBreakdown:
     return await generate_structured(
+        "reusability",
         settings.model_strong,
         INSTRUCTIONS,
         build_reusability_input(query_text, matter_title, documents),

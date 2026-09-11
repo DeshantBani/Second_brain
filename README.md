@@ -147,6 +147,11 @@ docker compose ps                       # container status
 docker compose logs -f api              # single-service logs
 docker compose exec postgres psql -U sb_owner -d second_brain   # direct DB access (bypasses RLS)
 
+# raw Gemini call log (see "The raw call log & demo-resilience cache" below) -
+# also browsable at /admin/agent-calls as an admin user
+docker compose exec postgres psql -U sb_owner -d second_brain \
+  -c "SELECT agent_name, success, replayed_from_cache, duration_ms, created_at FROM agent_call_logs ORDER BY created_at DESC LIMIT 20;"
+
 open http://localhost:9001              # MinIO console (sb_minio_admin / sb_minio_dev_password from .env)
 ```
 
@@ -177,7 +182,8 @@ security policy holds regardless of fingerprint similarity.
 the real Gemini API with graceful degradation if no key is configured, the blocking
 citation-verification guardrail, `MockCaseLawProvider` with a genuine negative-treatment
 fixture, confidentiality tiers, the audit log, the human-verification Review Gate, the
-Celery authority-monitoring job, and the full web UI.
+Celery authority-monitoring job, the raw call log + demo-resilience replay cache, the
+per-user History page, and the full web UI.
 
 **Deliberately scaffolded, not deep, in this pass:** Outlook/Word (`/addin/outlook`,
 `/addin/word` are route stubs — no `Office.js` dialog/token-bridge flow yet),
@@ -231,3 +237,47 @@ how tight that free-tier quota is. One dependency-chain note: `langgraph` pulls 
 sends data if `LANGCHAIN_TRACING_V2`/`LANGCHAIN_API_KEY` are set (they aren't here),
 but it's present in the dependency tree, same category of caveat as the free-tier
 Gemini note above.
+
+## The raw call log & demo-resilience cache
+
+Every single Gemini call - all 6 agents' structured generations and every embedding -
+is logged in full to the `agent_call_logs` table: exactly what was sent (model, system
+instruction, input) and exactly what came back (the raw response text), plus timing
+and success/failure. Browse it live at **Agent Calls** (admin) - click any row for the
+full request/response. Each query's `pipeline_run_id` links its own rows together and
+back to that query's entry in **Audit Log**, so a whole run can be inspected end to
+end.
+
+**Why this exists**: a free-tier key can and does hit rate limits or transient
+outages, and a live demo is exactly the wrong moment to fall back to a reasoning-free
+degraded response. So every successful call is also hashed (by agent + model + exact
+input) and kept as a fallback: when a live call fails for *any* reason - no key,
+invalid key, 429, 503, an unexpected error - `agents_sdk/client.py` and
+`services/embeddings.py` look for a prior successful response to that *exact same*
+call and replay it instead of giving up. This was verified live during the build: with
+`GEMINI_API_KEY` deliberately set to an invalid value, a previously-run query still
+returned its full, correct result (right matter ranked, right comparison, right
+**amber** reliability verdict) - just flagged `replayed_from_cache: true` instead of
+silently degrading. It is never a fabricated answer - always a genuine response the
+model gave at some point, replayed rather than regenerated.
+
+Practical implication for a live presentation: **run through your demo prompts once,
+successfully, before presenting** (or just use `make demo`, which seeds and doesn't
+touch this cache - the three prompts in `ExamplePrompts.tsx` are already warmed as of
+this build). After that, those exact queries keep working even if Gemini is
+unreachable when it matters. A query's own `/history` entry and the `Replayed from a
+prior real response` badge on its result page make it obvious after the fact whether a
+given answer was live or replayed.
+
+One correctness note from building this: the cache key must exclude anything that's
+regenerated fresh on every call for reasons unrelated to the actual question (the
+reliability agent's input originally embedded `CaseLawProvider`'s `checked_at`
+timestamp, which meant it could never hit its own cache - see the comment in
+`agents_sdk/reliability_agent.py::_build_input`). Worth checking for the same trap if
+you add a new agent call.
+
+## History
+
+Every user has a **History** page (`/history`) of their own past queries, most recent
+first, each one reopening the exact result they saw via the same `full_result`
+snapshot `GET /query/{id}` already served for page refreshes - re-running nothing.

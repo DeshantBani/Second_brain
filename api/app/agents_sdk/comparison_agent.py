@@ -48,6 +48,7 @@ async def run_comparison_agent(
     documents: list[dict],
 ) -> ComparisonResult:
     return await generate_structured(
+        "comparison",
         settings.model_strong,
         INSTRUCTIONS,
         build_comparison_input(query_text, query_fp, matter_title, documents),

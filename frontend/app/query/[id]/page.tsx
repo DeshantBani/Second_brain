@@ -13,7 +13,7 @@ import { ReusabilityBreakdownView } from "@/components/reusability/ReusabilityBr
 import { ReliabilityReasoningPanel } from "@/components/reliability/ReliabilityReasoningPanel";
 import { api, ApiError } from "@/lib/api";
 import type { QueryResultOut } from "@/lib/types";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 export default function QueryResultPage() {
   const params = useParams<{ id: string }>();
@@ -64,6 +64,12 @@ export default function QueryResultPage() {
             <Badge variant="amber">
               <AlertTriangle size={11} />
               Degraded mode
+            </Badge>
+          )}
+          {result.replayed_from_cache && (
+            <Badge variant="accent">
+              <RefreshCw size={11} />
+              Replayed from a prior real response
             </Badge>
           )}
         </div>
