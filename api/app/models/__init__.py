@@ -10,6 +10,8 @@ from app.models.matter_authority import MatterAuthority
 from app.models.reliability import ReliabilityAssessment
 from app.models.querylog import QueryLog
 from app.models.agent_call_log import AgentCallLog
+from app.models.drafting_session import DraftingSession
+from app.models.proofreading_report import ProofreadingReport
 
 __all__ = [
     "User",
@@ -22,4 +24,6 @@ __all__ = [
     "ReliabilityAssessment",
     "QueryLog",
     "AgentCallLog",
+    "DraftingSession",
+    "ProofreadingReport",
 ]

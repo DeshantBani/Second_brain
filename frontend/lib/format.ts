@@ -25,3 +25,11 @@ export function initials(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+/** Appends text extracted from an uploaded document to an existing textarea value,
+ * with a small header noting where it came from - used everywhere DocumentUpload is
+ * wired in, so uploading accumulates rather than silently overwriting what's typed. */
+export function appendExtractedText(existing: string, extracted: string, filename: string): string {
+  const header = `--- Uploaded: ${filename} ---`;
+  return existing.trim() ? `${existing}\n\n${header}\n${extracted}` : `${header}\n${extracted}`;
+}

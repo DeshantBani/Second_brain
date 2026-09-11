@@ -7,7 +7,9 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { DocumentUpload } from "@/components/shared/DocumentUpload";
 import { api, ApiError } from "@/lib/api";
+import { appendExtractedText } from "@/lib/format";
 
 const DOC_TYPES = ["memo", "email", "contract", "pleading", "due_diligence", "note"];
 
@@ -94,6 +96,13 @@ export default function NewMatterPage() {
           <label className="block text-xs font-medium text-ink-muted mb-1.5">
             Document text
           </label>
+          <div className="mb-2">
+            <DocumentUpload
+              label="Upload document (PDF/DOCX/TXT)"
+              addPageMarkers
+              onExtracted={(text, filename) => setRawText((prev) => appendExtractedText(prev, text, filename))}
+            />
+          </div>
           <Textarea
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}

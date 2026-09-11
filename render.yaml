@@ -1,0 +1,73 @@
+# Single-platform Render deployment: frontend + backend + database, one account,
+# one dashboard. No Redis/Celery/object storage needed - see services/storage.py and
+# main.py: neither is load-bearing for any actual feature (only the separate
+# scheduled authority-recheck job used Redis/Celery, and that's deliberately not
+# deployed here - the manual "Recheck" button in /admin/authorities does the same
+# check on demand instead).
+#
+# To use: Render dashboard -> New -> Blueprint -> select this repo. Or skip this file
+# and create the three resources manually in the dashboard (Postgres, then the two web
+# services) - see README's "Deploying (single-platform, Render)" section for exact
+# field-by-field steps either way.
+databases:
+  - name: second-brain-db
+    plan: free
+    databaseName: second_brain
+    user: sb_owner
+
+services:
+  - type: web
+    name: second-brain-api
+    runtime: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    plan: free
+    # Overrides entrypoint.sh's default `uvicorn ... --reload` (dev mode).
+    dockerCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    # Runs before each deploy - keeps the schema/RLS policies current without needing
+    # a shell session. Safe to re-run (see api/app/db_bootstrap.py - fully idempotent).
+    preDeployCommand: "python -m app.db_bootstrap"
+    envVars:
+      - key: DATABASE_URL_OWNER
+        fromDatabase:
+          name: second-brain-db
+          property: connectionString
+      # DATABASE_URL (the RLS-enforced app_user connection) can't be derived from the
+      # database's own connectionString (app_user doesn't exist until db_bootstrap
+      # creates it) - set manually after the first deploy once you know the host from
+      # the connection string above. See README for the exact steps.
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_DB_USER
+        value: app_user
+      - key: APP_DB_PASSWORD
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MODEL_FAST
+        value: gemini-flash-lite-latest
+      - key: MODEL_STRONG
+        value: gemini-flash-lite-latest
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+      - key: EMBEDDING_DIMENSIONS
+        value: "1536"
+      - key: CASE_LAW_PROVIDER
+        value: mock
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRES_MINUTES
+        value: "1440"
+
+  - type: web
+    name: second-brain-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run start -- -p $PORT -H 0.0.0.0"
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false

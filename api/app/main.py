@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.db import owner_engine
-from app.routers import addin, admin, auth, documents, matters, query
+from app.routers import addin, admin, auth, documents, drafting, matters, query, uploads
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,6 +28,8 @@ app.include_router(documents.router)
 app.include_router(query.router)
 app.include_router(admin.router)
 app.include_router(addin.router)
+app.include_router(drafting.router)
+app.include_router(uploads.router)
 
 
 @app.get("/health")

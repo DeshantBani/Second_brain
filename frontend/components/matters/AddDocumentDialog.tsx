@@ -5,7 +5,9 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DocumentUpload } from "@/components/shared/DocumentUpload";
 import { api, ApiError } from "@/lib/api";
+import { appendExtractedText } from "@/lib/format";
 import type { IngestDocumentResponse } from "@/lib/types";
 
 const DOC_TYPES = ["memo", "email", "contract", "pleading", "due_diligence", "note"];
@@ -77,6 +79,13 @@ export function AddDocumentDialog({
           </div>
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1.5">Document text</label>
+            <div className="mb-2">
+              <DocumentUpload
+                label="Upload document (PDF/DOCX/TXT)"
+                addPageMarkers
+                onExtracted={(extracted, filename) => setText((prev) => appendExtractedText(prev, extracted, filename))}
+              />
+            </div>
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}

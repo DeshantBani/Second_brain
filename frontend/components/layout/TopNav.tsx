@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookMarked, History, LayoutList, ScrollText, ShieldCheck, Terminal, LogOut } from "lucide-react";
+import { BookMarked, FileEdit, History, LayoutList, ScrollText, SearchCheck, ShieldCheck, Terminal, LogOut } from "lucide-react";
 import { clearSession, getStoredUser, StoredUser } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -11,6 +11,8 @@ import { cn } from "@/lib/cn";
 const NAV_ITEMS = [
   { href: "/", label: "Query", icon: BookMarked },
   { href: "/matters", label: "Matters", icon: LayoutList },
+  { href: "/draft", label: "Draft", icon: FileEdit },
+  { href: "/proofread", label: "Proofread", icon: SearchCheck },
   { href: "/history", label: "History", icon: History },
 ];
 

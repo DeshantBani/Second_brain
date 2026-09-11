@@ -146,6 +146,74 @@ class CitationExtractionResult(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# 8. Drafting-intake agent (agents_sdk/drafting_intake_agent.py)
+# ---------------------------------------------------------------------------
+
+class GatheredRequirements(BaseModel):
+    petition_type: str = Field(description="The specific type of petition/application to draft, e.g. 'Petition under Section 34 of the Arbitration and Conciliation Act, 1996'")
+    forum: str = Field(description="The court/tribunal the petition will be filed before")
+    petitioner: str = Field(description="Name/description of the petitioner(s)")
+    respondent: str = Field(description="Name/description of the respondent(s)")
+    grounds: list[str] = Field(description="The specific legal grounds to be raised, as the lawyer specified or confirmed")
+    relief_sought: str = Field(description="The relief/prayer the petition should seek")
+    key_facts_summary: str = Field(description="A concise summary of the operative facts drawn from the case brief and conversation, to ground the draft")
+
+
+class DraftingIntakeResult(BaseModel):
+    ready_to_draft: bool = Field(description="True only once petition_type, forum, parties, grounds, and relief sought are all known - either from the case brief or the conversation")
+    next_question: str = Field(description="The single next clarifying question to ask, combining related missing items where natural (e.g. petition type + forum together). Empty string if ready_to_draft is true")
+    gathered_requirements: GatheredRequirements | None = Field(description="Filled in only when ready_to_draft is true - null otherwise")
+
+
+# ---------------------------------------------------------------------------
+# 9. Template research agent (agents_sdk/template_research_agent.py) - synthesizes
+# fetched web pages (services/web_research.py does the actual searching/fetching)
+# into a structured format; never invents having seen a source it wasn't given.
+# ---------------------------------------------------------------------------
+
+class PetitionSection(BaseModel):
+    name: str = Field(description="Section name, e.g. 'Cause Title', 'Synopsis', 'Facts', 'Grounds', 'Prayer', 'Verification'")
+    description: str = Field(description="What this section conventionally contains and how it should be drafted")
+
+
+class TemplateStructureResult(BaseModel):
+    sections: list[PetitionSection] = Field(description="The ordered section structure for this petition type, grounded in the source material given")
+    grounded_in_sources: bool = Field(description="True only if this structure was actually derived from the provided source excerpts, false if none were usable and this is a standard/conventional structure instead")
+    notes: str = Field(description="Any caveats - e.g. which source(s) most informed this, or that no usable source was found and this is the standard convention")
+
+
+# ---------------------------------------------------------------------------
+# 10. Drafting agent (agents_sdk/drafting_agent.py)
+# ---------------------------------------------------------------------------
+
+class DraftedSection(BaseModel):
+    section_name: str
+    content: str = Field(description="The drafted text for this section - grounded only in the case brief and gathered requirements, never inventing facts")
+
+
+class DraftingResult(BaseModel):
+    sections: list[DraftedSection] = Field(description="The full petition, in the order given by the template structure")
+
+
+# ---------------------------------------------------------------------------
+# 11. Proofreading agent (agents_sdk/proofreading_agent.py)
+# ---------------------------------------------------------------------------
+
+class ProofreadingFinding(BaseModel):
+    category: Literal["format", "content", "missing_fact"] = Field(description="format = structural/section issues; content = substantive drafting issues; missing_fact = a fact present in the case brief but absent from the draft")
+    severity: Literal["high", "medium", "low"]
+    section: str = Field(description="The section of the draft this finding relates to, or 'general' if not section-specific")
+    issue: str = Field(description="What is wrong")
+    suggestion: str = Field(description="A concrete, specific fix")
+    grounding_excerpt: str = Field(description="For 'missing_fact' findings, the exact excerpt from the case brief that supports this - empty string for other categories")
+
+
+class ProofreadingResult(BaseModel):
+    summary: str = Field(description="A short overall assessment - never phrased as clearance/approval, only as what to verify, matching this system's reliability layer convention")
+    findings: list[ProofreadingFinding]
+
+
+# ---------------------------------------------------------------------------
 # Assembled per-query result (not itself an agent output - built by the orchestrator)
 # ---------------------------------------------------------------------------
 

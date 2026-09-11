@@ -263,3 +263,86 @@ export interface AgentCallLogOut {
   duration_ms: number;
   created_at: string;
 }
+
+// --- Drafting ---
+
+export interface ConversationTurn {
+  role: "assistant" | "user";
+  content: string;
+  at: string;
+}
+
+export interface GatheredRequirements {
+  petition_type: string;
+  forum: string;
+  petitioner: string;
+  respondent: string;
+  grounds: string[];
+  relief_sought: string;
+  key_facts_summary: string;
+}
+
+export interface PetitionSectionOut {
+  name: string;
+  description: string;
+}
+
+export interface TemplateStructureOut {
+  sections: PetitionSectionOut[];
+  grounded_in_sources: boolean;
+  notes: string;
+}
+
+export interface DraftedSectionOut {
+  section_name: string;
+  content: string;
+}
+
+export interface DraftingSessionOut {
+  id: string;
+  case_brief: string;
+  status: "gathering" | "ready" | "drafted";
+  conversation: ConversationTurn[];
+  gathered_requirements: GatheredRequirements | null;
+  template_structure: TemplateStructureOut | null;
+  draft_sections: DraftedSectionOut[] | null;
+  degraded_mode: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DraftingSessionSummary {
+  id: string;
+  case_brief: string;
+  status: "gathering" | "ready" | "drafted";
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Proofreading ---
+
+export interface ProofreadingFindingOut {
+  category: "format" | "content" | "missing_fact";
+  severity: "high" | "medium" | "low";
+  section: string;
+  issue: string;
+  suggestion: string;
+  grounding_excerpt: string;
+}
+
+export interface ProofreadingReportOut {
+  id: string;
+  case_brief: string | null;
+  draft_text: string;
+  summary: string;
+  findings: ProofreadingFindingOut[];
+  degraded_mode: boolean;
+  created_at: string;
+}
+
+export interface ProofreadingReportSummary {
+  id: string;
+  summary: string;
+  finding_count: number;
+  created_at: string;
+}

@@ -38,11 +38,16 @@ class Settings(BaseSettings):
     # Redis / Celery
     redis_url: str = "redis://localhost:6380/0"
 
-    # MinIO
-    minio_endpoint: str = "localhost:9000"
-    minio_public_endpoint: str = "localhost:9000"
-    minio_access_key: str = "sb_minio_admin"
-    minio_secret_key: str = "sb_minio_dev_password"
+    # MinIO - optional (see services/storage.py: nothing in the app ever reads a
+    # document back from here, only writes a redundant copy). Defaults to "" so that
+    # a deployment which simply never sets these (e.g. a hosted demo skipping object
+    # storage entirely) is correctly detected as "not configured" and skips the write
+    # immediately, rather than defaulting to a localhost address that doesn't exist
+    # there and wasting a connection attempt on every document ingested.
+    minio_endpoint: str = ""
+    minio_public_endpoint: str = ""
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
     minio_bucket: str = "second-brain-documents"
     minio_use_ssl: bool = False
 

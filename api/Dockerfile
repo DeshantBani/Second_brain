@@ -12,7 +12,8 @@ COPY pyproject.toml ./
 # Install dependencies only first (no source yet) so rebuilds are fast when app code changes.
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir fastapi "uvicorn[standard]" sqlalchemy "psycopg[binary]" \
-       pgvector pydantic pydantic-settings pyjwt bcrypt google-genai langgraph \
+       pgvector pydantic pydantic-settings pyjwt bcrypt google-genai langgraph beautifulsoup4 \
+       pypdf python-docx \
        celery redis minio python-multipart httpx python-dotenv pytest pytest-asyncio
 
 COPY . .

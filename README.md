@@ -184,7 +184,8 @@ citation-verification guardrail, `MockCaseLawProvider` with a genuine negative-t
 fixture, confidentiality tiers, the audit log, the human-verification Review Gate, the
 Celery authority-monitoring job, the raw call log + demo-resilience replay cache, the
 per-user History page, AI-aligned new-matter intake with automatic citation extraction,
-and the full web UI.
+conversational petition drafting with live web-researched formatting, fact-grounded
+proofreading, and the full web UI.
 
 **Deliberately scaffolded, not deep, in this pass:** Outlook/Word (`/addin/outlook`,
 `/addin/word` are route stubs — no `Office.js` dialog/token-bridge flow yet),
@@ -333,3 +334,77 @@ session, since the matter is already accessible to that user.
 (independent of any matter document mentioning it) - there's still no path for that,
 deliberately, since it would mean either fabricating treatment data or registering a
 citation with no real status behind it at all.
+
+## Drafting & proofreading
+
+Two standalone features (not tied to the matter archive - a lawyer inputs a fresh case
+each time), reachable from **Draft** and **Proofread** in the nav.
+
+**Draft** (`/draft/new` → `/draft/{id}`): the lawyer describes their case in free text
+(the "case brief"). A conversational **drafting-intake agent**
+(`agents_sdk/drafting_intake_agent.py`) then asks follow-up questions one at a time -
+"what type of petition, before which forum?", "what grounds?", "what relief?" - never
+asking about anything already stated, until it has enough to draft. Once ready:
+
+1. A **template research agent** (`agents_sdk/template_research_agent.py`) searches
+   the web for that petition type's conventional format and synthesizes an ordered
+   section structure from whatever it actually found - grounded in real fetched pages,
+   never fabricated. The search/fetch itself (`services/web_research.py`) is plain
+   HTTP + HTML parsing (DuckDuckGo's HTML endpoint, `httpx` + `BeautifulSoup`) rather
+   than a browser - Google blocks non-API scraping outright, and a full headless
+   Chromium buys nothing extra for finding text-based legal reference pages. Verified
+   live during the build: it actually finds and cites a real source (a citation-format
+   guide) for a Section 34 petition.
+2. A **drafting agent** (`agents_sdk/drafting_agent.py`) writes the petition against
+   that structure, section by section, grounded only in the case brief and the
+   gathered requirements - verified live to stay properly scoped to the actual facts
+   given (parties, figures, dates) rather than generic boilerplate.
+
+Every draft carries an explicit "AI-drafted — review before filing" banner; there is
+no auto-file or auto-send anywhere.
+
+**Proofread** (`/proofread`): paste a draft (from anywhere - a lawyer's own work, not
+just this tool's output) and, optionally, the case brief it should match. The
+**proofreading agent** (`agents_sdk/proofreading_agent.py`) flags three kinds of
+issues - `format` (missing/misordered sections), `content` (arguments that don't hold
+together), and `missing_fact` (something material in the case brief that never made it
+into the draft, quoted directly from the brief as grounding - never asserted without
+being able to point to it). Framed the same way as the reliability layer elsewhere in
+this system: a validator rejects any summary using clearance language ("looks good,"
+"ready to file") - findings are always a prompt to verify, never an approval. Verified
+live: proofreading a deliberately incomplete version of a real draft correctly caught
+the exact fact that had been removed, quoting it from the case brief.
+
+The two connect: a generated draft has a **Send to proofreading** button carrying its
+text and case brief across.
+
+Both are standalone workspaces scoped by user ownership only (`drafting_sessions`,
+`proofreading_reports` - not row-level-secured/matter-linked, same pattern as
+`QueryLog`), with their own history views (`/draft`, and recent reports on
+`/proofread`). Every agent call in both features runs through the same
+`generate_structured()` used everywhere else in this system, so it's covered by the
+same raw call log and demo-resilience replay cache described above for free.
+
+## Document upload (PDF / DOCX / TXT / MD)
+
+Every free-text intake surface in the app - new-matter/add-document text, drafting's
+case brief, proofreading's case brief and draft text - has an **Upload document**
+button alongside the textarea, so a lawyer can upload a file instead of pasting.
+Extraction is server-side (`services/text_extraction.py`, `POST
+/uploads/extract-text`): `pypdf` for PDF text layers, `python-docx` for Word, plain
+decode for TXT/MD. Uploads append to whatever's already in the field (with a small
+"--- Uploaded: filename ---" header) rather than overwriting it, so multiple documents
+can be combined into one case brief.
+
+Deliberately **no OCR** (per the original build plan's scope: clean digital text and
+PDFs-with-a-text-layer only, OCR as a discrete future step) - a scanned/image-only PDF
+returns a clear 422 error rather than silently extracting nothing, verified with a
+regression test after an early version of this let exactly that slip through (a
+blank-page PDF was returning a bare `"## PAGE 1"` marker as if it were real content).
+
+For uploads feeding matter/document ingestion (which relies on real page numbers for
+source-linking - see the Matters section above), PDF page breaks are preserved as the
+same `## PAGE N` markers `parse_page_map` already expects, so an uploaded PDF gets
+real per-page citations exactly like pasted, manually-marked text does. DOCX has no
+reliably extractable page concept, so it's treated as a single page, same as any
+unmarked pasted text.

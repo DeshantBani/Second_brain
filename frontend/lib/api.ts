@@ -5,12 +5,16 @@ import type {
   AuthorityOut,
   CreateMatterRequest,
   CreateMatterResponse,
+  DraftingSessionOut,
+  DraftingSessionSummary,
   HealthOut,
   IngestDocumentRequest,
   IngestDocumentResponse,
   MatterDetail,
   MatterSummary,
   MeResponse,
+  ProofreadingReportOut,
+  ProofreadingReportSummary,
   QueryHistoryItem,
   QueryResultOut,
 } from "./types";
@@ -46,6 +50,32 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+async function requestFormData<T>(path: string, formData: FormData): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  // deliberately no Content-Type here - the browser sets the multipart boundary itself
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers, body: formData });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      detail = body.detail || JSON.stringify(body);
+    } catch {
+      // ignore
+    }
+    throw new ApiError(res.status, detail);
+  }
+  return (await res.json()) as T;
+}
+
+export interface ExtractTextResponse {
+  filename: string;
+  text: string;
+  truncated: boolean;
 }
 
 export interface LoginResponse {
@@ -104,5 +134,38 @@ export const api = {
     if (params?.agent_name) qs.set("agent_name", params.agent_name);
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return request<AgentCallLogOut[]>(`/admin/agent-calls${suffix}`);
+  },
+
+  // --- Drafting ---
+  startDraftingSession: (caseBrief: string) =>
+    request<DraftingSessionOut>("/drafting/sessions", { method: "POST", body: JSON.stringify({ case_brief: caseBrief }) }),
+
+  listDraftingSessions: () => request<DraftingSessionSummary[]>("/drafting/sessions"),
+
+  getDraftingSession: (sessionId: string) => request<DraftingSessionOut>(`/drafting/sessions/${sessionId}`),
+
+  sendDraftingMessage: (sessionId: string, message: string) =>
+    request<DraftingSessionOut>(`/drafting/sessions/${sessionId}/messages`, { method: "POST", body: JSON.stringify({ message }) }),
+
+  generateDraft: (sessionId: string) =>
+    request<DraftingSessionOut>(`/drafting/sessions/${sessionId}/draft`, { method: "POST" }),
+
+  // --- Proofreading ---
+  proofread: (draftText: string, caseBrief?: string) =>
+    request<ProofreadingReportOut>("/proofread", {
+      method: "POST",
+      body: JSON.stringify({ draft_text: draftText, case_brief: caseBrief || null }),
+    }),
+
+  listProofreadingReports: () => request<ProofreadingReportSummary[]>("/proofread"),
+
+  getProofreadingReport: (reportId: string) => request<ProofreadingReportOut>(`/proofread/${reportId}`),
+
+  // --- Uploads ---
+  extractText: (file: File, addPageMarkers: boolean = true) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("add_page_markers", String(addPageMarkers));
+    return requestFormData<ExtractTextResponse>("/uploads/extract-text", formData);
   },
 };
