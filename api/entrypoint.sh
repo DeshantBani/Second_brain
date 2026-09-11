@@ -24,6 +24,14 @@ else:
     raise SystemExit("[entrypoint] postgres never became ready")
 PYEOF
 
+# Always run the (idempotent) schema/RLS setup before starting anything - this used
+# to be a separate `make migrate` step, but Render's free plan doesn't offer a
+# Pre-Deploy Command (that's a paid-tier feature), so baking it into every boot here
+# means a hosted deployment never needs it. Safe to run repeatedly - db_bootstrap.py
+# is written to be idempotent.
+echo "[entrypoint] running schema/RLS bootstrap..."
+python -m app.db_bootstrap
+
 if [ "$#" -gt 0 ]; then
   echo "[entrypoint] running: $*"
   exec "$@"

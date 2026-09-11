@@ -22,11 +22,12 @@ services:
     dockerfilePath: ./api/Dockerfile
     dockerContext: ./api
     plan: free
-    # Overrides entrypoint.sh's default `uvicorn ... --reload` (dev mode).
+    healthCheckPath: /health
+    # Overrides entrypoint.sh's default `uvicorn ... --reload` (dev mode). The schema/
+    # RLS bootstrap itself runs unconditionally inside entrypoint.sh on every boot,
+    # not as a separate Pre-Deploy Command - that field is a paid-plan-only feature on
+    # Render, so this way the free plan needs nothing extra.
     dockerCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-    # Runs before each deploy - keeps the schema/RLS policies current without needing
-    # a shell session. Safe to re-run (see api/app/db_bootstrap.py - fully idempotent).
-    preDeployCommand: "python -m app.db_bootstrap"
     envVars:
       - key: DATABASE_URL_OWNER
         fromDatabase:
