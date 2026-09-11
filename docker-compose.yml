@@ -47,7 +47,8 @@ services:
 
   api:
     build:
-      context: ./api
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:
@@ -67,7 +68,8 @@ services:
 
   worker:
     build:
-      context: ./api
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     command: celery -A app.jobs.celery_app worker --beat --loglevel=info
     env_file: .env

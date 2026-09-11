@@ -20,7 +20,9 @@ services:
     name: second-brain-api
     runtime: docker
     dockerfilePath: ./api/Dockerfile
-    dockerContext: ./api
+    # Root, not ./api - the Dockerfile also needs to COPY in db/ (the mock
+    # CaseLawProvider's fixtures live there), which sits outside an ./api-only context.
+    dockerContext: .
     plan: free
     healthCheckPath: /health
     # Overrides entrypoint.sh's default `uvicorn ... --reload` (dev mode). The schema/
