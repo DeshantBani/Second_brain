@@ -59,6 +59,47 @@ export interface MatterDetail extends MatterSummary {
   fingerprint: FingerprintOut | null;
 }
 
+export interface LinkedCitationOut {
+  citation: string;
+  status: string;
+  is_new_authority: boolean;
+}
+
+export interface CreateMatterRequest {
+  title: string;
+  client_name: string;
+  doc_title?: string;
+  doc_type?: string;
+  confidentiality_tier?: string;
+  opened_date?: string | null;
+  raw_text: string;
+}
+
+export interface CreateMatterResponse {
+  matter_id: string;
+  document_id: string;
+  degraded_mode: boolean;
+  jurisdiction: string | null;
+  practice_area: string | null;
+  matter_type: string | null;
+  citations_linked: LinkedCitationOut[];
+}
+
+export interface IngestDocumentRequest {
+  matter_id: string;
+  title: string;
+  doc_type: string;
+  confidentiality_tier?: string;
+  text: string;
+}
+
+export interface IngestDocumentResponse {
+  document_id: string;
+  fingerprint_id: string | null;
+  degraded_mode: boolean;
+  citations_linked: LinkedCitationOut[];
+}
+
 export interface SourceRef {
   document_id: string;
   page: number;

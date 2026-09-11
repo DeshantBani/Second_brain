@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
+import { FileText, Plus, ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ConfidentialityTierPill } from "@/components/shared/ConfidentialityTierPill";
 import { DocumentViewer } from "@/components/citations/DocumentViewer";
+import { AddDocumentDialog } from "./AddDocumentDialog";
 import { FingerprintCard } from "./FingerprintCard";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import type { DocumentDetail, MatterDetail } from "@/lib/types";
+import type { DocumentDetail, IngestDocumentResponse, MatterDetail } from "@/lib/types";
 
 const STATUS_ICON: Record<string, typeof ShieldCheck> = {
   good_law: ShieldCheck,
@@ -26,14 +28,21 @@ const STATUS_VARIANT: Record<string, "green" | "amber" | "red"> = {
   overruled: "red",
 };
 
-export function MatterDetailTabs({ matter }: { matter: MatterDetail }) {
+export function MatterDetailTabs({ matter, onChanged }: { matter: MatterDetail; onChanged?: () => void }) {
   const [viewerDoc, setViewerDoc] = useState<DocumentDetail | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [addDocOpen, setAddDocOpen] = useState(false);
+  const [lastIngest, setLastIngest] = useState<IngestDocumentResponse | null>(null);
 
   const openDocument = async (documentId: string) => {
     const detail = (await api.getDocument(matter.id, documentId)) as DocumentDetail;
     setViewerDoc(detail);
     setViewerOpen(true);
+  };
+
+  const handleIngested = (result: IngestDocumentResponse) => {
+    setLastIngest(result);
+    onChanged?.();
   };
 
   return (
@@ -47,6 +56,20 @@ export function MatterDetailTabs({ matter }: { matter: MatterDetail }) {
 
         <div className="pt-6">
           <TabsContent value="documents">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wide text-ink-faint">{matter.documents.length} documents</p>
+              <Button size="sm" variant="outline" onClick={() => setAddDocOpen(true)}>
+                <Plus size={13} />
+                Add document
+              </Button>
+            </div>
+            {lastIngest && (
+              <div className="mb-3 rounded border border-verdict-green/30 bg-verdict-green-bg px-3 py-2 text-xs text-verdict-green">
+                Ingested. {lastIngest.citations_linked.length > 0
+                  ? `Linked ${lastIngest.citations_linked.length} citation(s) to the Authorities tab.`
+                  : "No case-law citations were found in this document."}
+              </div>
+            )}
             <div className="space-y-2">
               {matter.documents.map((d) => (
                 <button key={d.id} onClick={() => openDocument(d.id)} className="w-full text-left">
@@ -109,6 +132,12 @@ export function MatterDetailTabs({ matter }: { matter: MatterDetail }) {
       </Tabs>
 
       <DocumentViewer open={viewerOpen} onClose={() => setViewerOpen(false)} document={viewerDoc} />
+      <AddDocumentDialog
+        matterId={matter.id}
+        open={addDocOpen}
+        onClose={() => setAddDocOpen(false)}
+        onIngested={handleIngested}
+      />
     </>
   );
 }

@@ -183,7 +183,8 @@ the real Gemini API with graceful degradation if no key is configured, the block
 citation-verification guardrail, `MockCaseLawProvider` with a genuine negative-treatment
 fixture, confidentiality tiers, the audit log, the human-verification Review Gate, the
 Celery authority-monitoring job, the raw call log + demo-resilience replay cache, the
-per-user History page, and the full web UI.
+per-user History page, AI-aligned new-matter intake with automatic citation extraction,
+and the full web UI.
 
 **Deliberately scaffolded, not deep, in this pass:** Outlook/Word (`/addin/outlook`,
 `/addin/word` are route stubs — no `Office.js` dialog/token-bridge flow yet),
@@ -281,3 +282,54 @@ you add a new agent call.
 Every user has a **History** page (`/history`) of their own past queries, most recent
 first, each one reopening the exact result they saw via the same `full_result`
 snapshot `GET /query/{id}` already served for page refreshes - re-running nothing.
+
+## New matter intake & automatic citation extraction
+
+**New matter** (`/matters/new`): paste a past matter's document text (with optional
+`## PAGE N` markers) plus a title and client name. `services/matter_intake.py` then:
+
+1. Creates the `Matter` row and grants the submitting user access to it.
+2. Ingests the text as its first `Document` (same `parse_page_map` every document goes
+   through).
+3. Runs the same fingerprint agent every matter in the archive uses, and writes its
+   `jurisdiction`/`practice_area`/`matter_type` back onto the `Matter` row - this is
+   the "AI aligns it to our structure" part: the new matter lands in the exact same
+   controlled vocabulary (`agents_sdk/tools.py::TAXONOMY`) the retrieval funnel's
+   structured filter depends on, rather than a human guessing at values that might not
+   match what the SQL filter looks for.
+4. Runs a new **citation extraction agent** (`agents_sdk/citation_extraction_agent.py`)
+   over the document. Purely extractive, same grounding discipline as the comparison
+   agent - every citation must carry a real page/paragraph/quote, which
+   `services/matter_intake.py::extract_and_link_citations` verifies against the
+   document's actual `page_map` before writing anything. The agent never determines a
+   citation's legal status; that always comes from `get_case_law_provider()` - a brand
+   new citation not in `MockCaseLawProvider`'s fixtures honestly resolves to `doubted`
+   with no treatment history (see `mock_provider.py`), never a fabricated `good_law`.
+   This is what makes the Authorities tab populate automatically instead of requiring
+   a hand-written `MatterAuthority` row (previously the only way one existed, in
+   `db/seed/seed_data.py`).
+
+**Add document** (a button on an existing matter's Documents tab) runs the same
+fingerprint-and-citation-extraction pipeline against `POST /documents`, re-fingerprinting
+the whole matter from all its documents combined and scanning just the new one for
+citations.
+
+Verified live end to end: a new matter citing an authority already in the archive
+(`ONGC v. Saw Pipes Ltd, (2003) 5 SCC 705`) correctly linked to the existing row with
+its real `good_law` status; a document added to an existing matter citing a citation
+never seen before correctly created a new `Authority` row with status `doubted` (the
+honest "we don't have treatment data on this" default) rather than inventing one.
+
+RLS note: creating a brand-new matter is a genuine chicken-and-egg problem for its
+row-level-security policy (a matter can't have an `AccessGrant` before it exists, and
+can't be inserted under RLS without one already existing). `ingest_new_matter` uses its
+own `OwnerSessionLocal` for exactly this reason - the same pattern `db/seed/seed_data.py`
+already relies on - since creating a matter and its first grant is a privileged,
+boundary-establishing operation, not an ordinary per-row read/write. Adding a document
+to an *existing* matter has no such problem and uses the caller's normal RLS-scoped
+session, since the matter is already accessible to that user.
+
+**Not covered by this**: ingesting a genuinely new case-law *authority* on its own
+(independent of any matter document mentioning it) - there's still no path for that,
+deliberately, since it would mean either fabricating treatment data or registering a
+citation with no real status behind it at all.

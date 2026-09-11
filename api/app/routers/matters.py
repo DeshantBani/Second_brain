@@ -1,14 +1,18 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.deps import get_db
+from app.deps import CurrentUser, get_current_user, get_db
 from app.models.authority import Authority
 from app.models.document import Document
 from app.models.fingerprint import IssueFingerprint
 from app.models.matter import Matter
 from app.models.matter_authority import MatterAuthority
+from app.schemas.document import CreateMatterRequest, CreateMatterResponse, LinkedCitationOut
 from app.schemas.matter import AuthorityRef, DocumentDetail, DocumentSummary, FingerprintOut, MatterDetail, MatterSummary
+from app.services.matter_intake import ingest_new_matter
 
 router = APIRouter(prefix="/matters", tags=["matters"])
 
@@ -18,6 +22,37 @@ def list_matters(db: Session = Depends(get_db)):
     # RLS on `matters` already limits this to what the current user has an AccessGrant for.
     matters = db.execute(select(Matter).order_by(Matter.opened_date.desc().nulls_last())).scalars().all()
     return [MatterSummary.model_validate(m) for m in matters]
+
+
+@router.post("", response_model=CreateMatterResponse)
+async def create_matter(payload: CreateMatterRequest, user: CurrentUser = Depends(get_current_user)):
+    """New-matter intake: creates the matter, ingests its first document, and runs the
+    same AI fingerprinting + citation-extraction pipeline every matter in the archive
+    goes through - see services/matter_intake.py for why this uses its own DB session
+    rather than the usual RLS-scoped one."""
+    if not payload.title.strip() or not payload.client_name.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="title and client_name are required")
+    if not payload.raw_text.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="raw_text must not be empty")
+
+    parsed_date: date | None = None
+    if payload.opened_date:
+        try:
+            parsed_date = date.fromisoformat(payload.opened_date)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="opened_date must be an ISO date (YYYY-MM-DD)")
+
+    result = await ingest_new_matter(
+        user_id=user.id, title=payload.title, client_name=payload.client_name,
+        doc_title=payload.doc_title, doc_type=payload.doc_type,
+        confidentiality_tier=payload.confidentiality_tier, opened_date=parsed_date,
+        raw_text=payload.raw_text,
+    )
+    return CreateMatterResponse(
+        matter_id=result["matter_id"], document_id=result["document_id"], degraded_mode=result["degraded_mode"],
+        jurisdiction=result["jurisdiction"], practice_area=result["practice_area"], matter_type=result["matter_type"],
+        citations_linked=[LinkedCitationOut(**c) for c in result["citations_linked"]],
+    )
 
 
 @router.get("/{matter_id}", response_model=MatterDetail)

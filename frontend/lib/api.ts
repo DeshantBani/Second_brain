@@ -3,7 +3,11 @@ import type {
   AgentCallLogOut,
   AuditLogOut,
   AuthorityOut,
+  CreateMatterRequest,
+  CreateMatterResponse,
   HealthOut,
+  IngestDocumentRequest,
+  IngestDocumentResponse,
   MatterDetail,
   MatterSummary,
   MeResponse,
@@ -65,8 +69,14 @@ export const api = {
 
   getMatter: (matterId: string) => request<MatterDetail>(`/matters/${matterId}`),
 
+  createMatter: (payload: CreateMatterRequest) =>
+    request<CreateMatterResponse>("/matters", { method: "POST", body: JSON.stringify(payload) }),
+
   getDocument: (matterId: string, documentId: string) =>
     request(`/matters/${matterId}/documents/${documentId}`),
+
+  ingestDocument: (payload: IngestDocumentRequest) =>
+    request<IngestDocumentResponse>("/documents", { method: "POST", body: JSON.stringify(payload) }),
 
   submitQuery: (queryText: string, source: string = "web") =>
     request<QueryResultOut>("/query", { method: "POST", body: JSON.stringify({ query_text: queryText, source }) }),

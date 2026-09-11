@@ -6,25 +6,8 @@ see agents_sdk/client.py's GuardrailTripwireTriggered and orchestrator.py's hand
 that exception."""
 from app.agents_sdk.client import GuardrailFunctionOutput
 from app.agents_sdk.schemas import ReliabilityAssessmentSchema
+from app.agents_sdk.text_match import fuzzy_contains
 from app.reliability.factory import get_case_law_provider
-
-
-def _normalize(text: str) -> set[str]:
-    return {w.strip(".,;:()\"'") for w in text.lower().split() if w.strip(".,;:()\"'")}
-
-
-def _fuzzy_contains(haystack: str, needle: str, threshold: float = 0.6) -> bool:
-    if not needle.strip():
-        return False
-    haystack_l = haystack.lower()
-    if needle.lower() in haystack_l:
-        return True
-    needle_words = _normalize(needle)
-    if not needle_words:
-        return False
-    haystack_words = _normalize(haystack)
-    overlap = len(needle_words & haystack_words)
-    return (overlap / len(needle_words)) >= threshold
 
 
 async def check_reliability_output(output: ReliabilityAssessmentSchema) -> GuardrailFunctionOutput:
@@ -51,7 +34,7 @@ async def check_reliability_output(output: ReliabilityAssessmentSchema) -> Guard
         # either the citation's own treatment history, or (less strictly) be grounded text,
         # never a fabricated quote.
         provider_texts = [event.excerpt for event in live_status.treatment_history]
-        if provider_texts and not any(_fuzzy_contains(t, source.treatment_excerpt) for t in provider_texts):
+        if provider_texts and not any(fuzzy_contains(t, source.treatment_excerpt) for t in provider_texts):
             failures.append(
                 f"Unverifiable treatment_excerpt for '{source.citation}': the quoted text does not match "
                 "any treatment record returned by the CaseLawProvider."

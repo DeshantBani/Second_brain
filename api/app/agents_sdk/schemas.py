@@ -123,6 +123,29 @@ class ReliabilityAssessmentSchema(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# 7. Citation extraction agent (matter intake - services/matter_intake.py)
+# ---------------------------------------------------------------------------
+
+class ExtractedCitation(BaseModel):
+    """Purely extractive - the model may only report a citation it can point to an
+    exact page/paragraph and quote for. It never determines the citation's legal
+    status; services/matter_intake.py resolves that via the CaseLawProvider, exactly
+    as the reliability agent does - this agent's job ends at 'this document mentions
+    this case, here, for this reason.'"""
+    citation: str = Field(description="The case citation exactly as written in the text, e.g. 'Continental Constructions Co. Ltd v. State Trading Corporation of India, AIR 1997 Del 217'")
+    court: str = Field(description="Court name if stated in or near the citation, else 'Unknown'")
+    year: int = Field(description="Year of the decision if determinable from the citation or surrounding text, else 0")
+    relied_upon_for: str = Field(description="Short description of what the document relies on this authority for")
+    page: int = Field(description="1-indexed page where this citation appears")
+    paragraph: int = Field(description="1-indexed paragraph where this citation appears")
+    quote: str = Field(description="Short verbatim quote (<=30 words) from that exact paragraph, copied exactly")
+
+
+class CitationExtractionResult(BaseModel):
+    citations: list[ExtractedCitation] = Field(description="Every case-law citation actually mentioned in the text - an empty list if none are")
+
+
+# ---------------------------------------------------------------------------
 # Assembled per-query result (not itself an agent output - built by the orchestrator)
 # ---------------------------------------------------------------------------
 

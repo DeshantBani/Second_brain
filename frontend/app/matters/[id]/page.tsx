@@ -14,12 +14,14 @@ export default function MatterDetailPage() {
   const [matter, setMatter] = useState<MatterDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refetch = () => {
     api
       .getMatter(params.id)
       .then(setMatter)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Could not load this matter."));
-  }, [params.id]);
+  };
+
+  useEffect(refetch, [params.id]);
 
   if (error) {
     return <p className="text-sm text-verdict-red text-center py-16">{error}</p>;
@@ -47,7 +49,7 @@ export default function MatterDetailPage() {
         </p>
       </div>
 
-      <MatterDetailTabs matter={matter} />
+      <MatterDetailTabs matter={matter} onChanged={refetch} />
     </div>
   );
 }
