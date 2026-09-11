@@ -82,6 +82,9 @@ def _build_input(citation: str, relied_upon_for: str, documents: list[dict], pro
     return json.dumps(payload, indent=2)
 
 
+_MAX_GUARDRAIL_RETRIES = 2  # total attempts = 1 + this
+
+
 async def run_reliability_agent(
     citation: str,
     relied_upon_for: str,
@@ -96,10 +99,21 @@ async def run_reliability_agent(
         status.model_dump(mode="json"), [j.model_dump(mode="json") for j in judgments],
     )
 
-    assessment = await generate_structured("reliability", settings.model_strong, INSTRUCTIONS, input_text, StrictReliabilityAssessment)
+    last_failures: list[str] = []
+    for attempt in range(_MAX_GUARDRAIL_RETRIES + 1):
+        assessment = await generate_structured("reliability", settings.model_strong, INSTRUCTIONS, input_text, StrictReliabilityAssessment)
 
-    guardrail_result = await check_reliability_output(assessment)
-    if guardrail_result.tripwire_triggered:
-        raise GuardrailTripwireTriggered(guardrail_result.output_info.get("failures", []))
+        guardrail_result = await check_reliability_output(assessment)
+        if not guardrail_result.tripwire_triggered:
+            return assessment
 
-    return assessment
+        # The model occasionally conflates an authority's own current status (provider_data's
+        # citation_status) with how a citing judgment treated it - a genuinely stochastic
+        # structured-output slip, not a deterministic bug. Re-drafting from the same
+        # (unchanged) provider_data usually clears it, so retry a couple of times before
+        # giving up and surfacing "Verification Failed" - never on a second live call log
+        # that happens to be identical, since input_text is unchanged and it's the model's
+        # own sampling that varies.
+        last_failures = guardrail_result.output_info.get("failures", [])
+
+    raise GuardrailTripwireTriggered(last_failures)
