@@ -1,0 +1,74 @@
+[
+  {
+    "citation": "Continental Constructions Co. Ltd v. State Trading Corporation of India, AIR 1997 Del 217",
+    "court": "Delhi High Court",
+    "year": 1997,
+    "status": "doubted",
+    "holding_excerpt": "A cure period stipulated in a commercial contract must be permitted to run its full course before the innocent party may treat the breach as one sounding in damages; any assertion of a damages claim prior to expiry of the cure period is premature and does not defeat the defaulting party's right to cure.",
+    "citing_judgments": [
+      {
+        "citing_case": "Bharat Heavy Fabrications v. Konkan Traders Pvt Ltd, (2015) 3 Mah LJ 88",
+        "court": "Bombay High Court",
+        "year": 2015,
+        "treatment": "negative",
+        "excerpt": "We are unable to agree with the broad proposition in Continental Constructions that a cure period must in every case run its full course. Where the counterparty has, prior to expiry of the cure period, already asserted a claim for damages arising from the very breach sought to be cured, the object of the cure period is frustrated and strict compliance may not be insisted upon. Continental Constructions is accordingly distinguished on its facts."
+      }
+    ]
+  },
+  {
+    "citation": "Bharat Heavy Fabrications v. Konkan Traders Pvt Ltd, (2015) 3 Mah LJ 88",
+    "court": "Bombay High Court",
+    "year": 2015,
+    "status": "good_law",
+    "holding_excerpt": "Where a counterparty has, prior to expiry of a contractual cure period, already asserted a claim for damages arising from the very breach sought to be cured, strict compliance with the full cure period may not be insisted upon.",
+    "citing_judgments": []
+  },
+  {
+    "citation": "National Highways Authority of India v. Sayedabad Tea Co. Ltd, (2011) 12 SCC 720",
+    "court": "Supreme Court of India",
+    "year": 2011,
+    "status": "good_law",
+    "holding_excerpt": "The scope of interference with an arbitral award under Section 34 of the Arbitration and Conciliation Act, 1996 is narrow and does not extend to a reappraisal of evidence.",
+    "citing_judgments": [
+      {
+        "citing_case": "Union of India v. Bharat Rail Fittings Ltd, (2018) 7 SCC 512",
+        "court": "Supreme Court of India",
+        "year": 2018,
+        "treatment": "positive",
+        "excerpt": "We reaffirm the principle in Sayedabad Tea that Section 34 does not permit a reappraisal of evidence on merits."
+      }
+    ]
+  },
+  {
+    "citation": "ONGC v. Saw Pipes Ltd, (2003) 5 SCC 705",
+    "court": "Supreme Court of India",
+    "year": 2003,
+    "status": "good_law",
+    "holding_excerpt": "An award can be set aside as being in conflict with the public policy of India where it is patently illegal or contrary to the fundamental policy of Indian law.",
+    "citing_judgments": [
+      {
+        "citing_case": "Associate Builders v. Delhi Development Authority, (2015) 3 SCC 49",
+        "court": "Supreme Court of India",
+        "year": 2015,
+        "treatment": "positive",
+        "excerpt": "The formulation of patent illegality in Saw Pipes continues to guide the public-policy ground of challenge, subject to the 2015 amendment's clarifications."
+      }
+    ]
+  },
+  {
+    "citation": "Hind Construction v. State of Maharashtra, 1979 AIR 720",
+    "court": "Supreme Court of India",
+    "year": 1979,
+    "status": "overruled",
+    "holding_excerpt": "Time is not ordinarily of the essence in a contract for construction work unless the contract expressly so provides.",
+    "citing_judgments": [
+      {
+        "citing_case": "Saradamani Kandappan v. S. Rajalakshmi, (2011) 12 SCC 18",
+        "court": "Supreme Court of India",
+        "year": 2011,
+        "treatment": "negative",
+        "excerpt": "The observations in Hind Construction on the presumption against time being of the essence must be read as overruled to the extent they conflict with subsequent commercial-realities jurisprudence; modern commercial contracts routinely make time of the essence by their terms and courts must give effect to that."
+      }
+    ]
+  }
+]

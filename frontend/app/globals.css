@@ -1,0 +1,46 @@
+@import "../styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-inter), -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+/* Subtle paper texture: an almost-invisible grain so the paper-editorial feel reads as
+   material rather than a flat off-white div. */
+.paper-texture {
+  background-image: radial-gradient(circle at 1px 1px, rgba(28, 26, 23, 0.035) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}

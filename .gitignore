@@ -1,0 +1,32 @@
+# env
+.env
+.env.local
+
+# python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+celerybeat-schedule
+
+# node
+node_modules/
+.next/
+out/
+npm-debug.log*
+next-env.d.ts
+
+# os
+.DS_Store
+
+# editors
+.vscode/
+.idea/
+
+# misc
+*.log
+.cache/
+dist/
+build/

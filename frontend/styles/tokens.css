@@ -1,0 +1,19 @@
+:root {
+  --color-paper: #faf7f0;
+  --color-paper-raised: #ffffff;
+  --color-ink: #1c1a17;
+  --color-ink-muted: #55504a;
+  --color-ink-faint: #8c8578;
+  --color-border: #e4ddd0;
+  --color-accent: #25324b;
+  --color-accent-soft: #eef1f6;
+
+  --color-verdict-green: #3f6b4a;
+  --color-verdict-green-bg: #eaf1ea;
+  --color-verdict-amber: #9c6b1f;
+  --color-verdict-amber-bg: #faf1e0;
+  --color-verdict-red: #9c3b2e;
+  --color-verdict-red-bg: #f8eae7;
+  --color-verdict-grey: #8c8578;
+  --color-verdict-grey-bg: #efece5;
+}
